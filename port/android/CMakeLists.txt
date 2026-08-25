@@ -148,3 +148,23 @@ target_link_libraries(btstack_android btstack ${ANDROID_EXTRA_LIBS})
 if(ANDROID)
     target_link_options(btstack_android PRIVATE "-Wl,-soname,libbtstack_android.so")
 endif()
+
+# Bluetooth.apk JNI / bt_interface_t shim (com.android.bluetooth).
+# Replaces Fluoride libbluetooth_jni.so. Does not change h4/hci/aidl transports.
+option(BTSTACK_ANDROID_BLUETOOTH_APK "Build libbluetooth_jni.so for Bluetooth.apk" ON)
+if(ANDROID AND BTSTACK_ANDROID_BLUETOOTH_APK)
+    add_library(bluetooth_jni SHARED
+        bluetooth_apk/adapter_jni.c
+        bluetooth_apk/bt_interface.c
+        bluetooth_apk/btstack_btif.c
+        bluetooth_apk/btstack_main_apk.c
+        bluetooth_apk/profile_stubs.c
+    )
+    target_include_directories(bluetooth_jni PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/bluetooth_apk/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/bluetooth_apk
+    )
+    target_link_libraries(bluetooth_jni btstack ${ANDROID_EXTRA_LIBS})
+    target_link_options(bluetooth_jni PRIVATE "-Wl,-soname,libbluetooth_jni.so")
+    message(STATUS "Bluetooth.apk JNI shim: libbluetooth_jni.so")
+endif()

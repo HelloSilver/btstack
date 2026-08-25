@@ -33,6 +33,7 @@ cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" \
     -DANDROID_STL=c++_static \
     -DCMAKE_BUILD_TYPE=Release
 
-cmake --build "${BUILD_DIR}" --target gap_le_advertisements gatt_counter btstack_android -j"$(nproc)"
+cmake --build "${BUILD_DIR}" --target gap_le_advertisements gatt_counter btstack_android bluetooth_jni -j"$(nproc)"
 echo "Built ${BUILD_DIR}/gap_le_advertisements"
 echo "Built ${BUILD_DIR}/libbtstack_android.so"
+echo "Built ${BUILD_DIR}/libbluetooth_jni.so"

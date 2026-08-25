@@ -143,6 +143,7 @@ Outputs in the build directory:
 - native examples, e.g. `gap_le_advertisements`, `gatt_counter`
 - `libbtstack.a` for linking your own `btstack_main()`
 - `libbtstack_android.so` (JNI + `gap_le_advertisements` as the sample app)
+- `libbluetooth_jni.so` (Bluetooth.apk `AdapterService` JNI + `bt_interface_t`)
 
 ## Run on a device
 

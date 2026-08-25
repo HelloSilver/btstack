@@ -65,6 +65,8 @@ Java_com_bluekitchen_btstack_BTstack_init(JNIEnv *env, jobject thiz, jstring tra
     argv_storage[argc++] = transport_c;
     if (strcmp(transport_c, "hci") == 0) {
         argv_storage[argc++] = "-d";
+    } else if (strcmp(transport_c, "aidl") == 0) {
+        argv_storage[argc++] = "-i";
     } else {
         argv_storage[argc++] = "-u";
     }

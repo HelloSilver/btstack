@@ -71,6 +71,7 @@
 #include "hci_dump_android_logcat.h"
 #include "hci_dump_posix_fs.h"
 #include "hci_transport.h"
+#include "hci_transport_android_aidl.h"
 #include "hci_transport_android_hci.h"
 #include "hci_transport_h4.h"
 
@@ -91,11 +92,13 @@ static bool shutdown_triggered;
 typedef enum {
     ANDROID_TRANSPORT_H4 = 0,
     ANDROID_TRANSPORT_HCI,
+    ANDROID_TRANSPORT_AIDL,
 } android_transport_t;
 
 static android_transport_t android_transport = ANDROID_TRANSPORT_H4;
 static int android_hci_device_id = 0;
 static int use_logcat;
+static char aidl_instance_name[256] = "default";
 
 int btstack_main(int argc, const char * argv[]);
 static void local_version_information_handler(uint8_t * packet);
@@ -111,6 +114,7 @@ static hci_transport_config_uart_t uart_config = {
 };
 
 static hci_transport_config_android_hci_t hci_socket_config;
+static hci_transport_config_android_aidl_t aidl_config;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -231,8 +235,9 @@ static void local_version_information_handler(uint8_t * packet){
     printf("- LMP Subversion 0x%04x\n", lmp_subversion);
     printf("- Manufacturer 0x%04x\n", manufacturer);
 
-    // HCI User Channel talks to an already-initialized controller.
-    if (android_transport == ANDROID_TRANSPORT_HCI) {
+    // HCI User Channel and IBluetoothHci talk to an already-initialized controller.
+    if ((android_transport == ANDROID_TRANSPORT_HCI) ||
+        (android_transport == ANDROID_TRANSPORT_AIDL)) {
         return;
     }
 
@@ -286,7 +291,7 @@ static void local_version_information_handler(uint8_t * packet){
     }
 }
 
-static char short_options[] = "+hu:l:rb:t:d:c";
+static char short_options[] = "+hu:l:rb:t:d:ci:";
 
 static struct option long_options[] = {
         {"help",       no_argument,       NULL, 'h'},
@@ -297,6 +302,7 @@ static struct option long_options[] = {
         {"transport",  required_argument, NULL, 't'},
         {"hci-dev",    required_argument, NULL, 'd'},
         {"logcat",     no_argument,       NULL, 'c'},
+        {"instance",   required_argument, NULL, 'i'},
         {0, 0, 0, 0}
 };
 
@@ -306,9 +312,10 @@ static char *help_options[] = {
         "reset bonding information stored in TLV.",
         "set path to Bluetooth Controller UART (H4).",
         "set random static Bluetooth address.",
-        "HCI transport: h4 (UART) or hci (kernel HCI User Channel).",
+        "HCI transport: h4 (UART), hci (kernel HCI User Channel), or aidl (IBluetoothHci).",
         "kernel HCI device index, e.g. 0 for hci0 (hci transport).",
         "also dump HCI log messages to Android logcat.",
+        "IBluetoothHci instance name (default), or full service name (aidl transport).",
 };
 
 static char *option_arg_name[] = {
@@ -317,9 +324,10 @@ static char *option_arg_name[] = {
         "",
         "TTY",
         "BD_ADDR",
-        "h4|hci",
+        "h4|hci|aidl",
         "N",
         "",
+        "NAME",
 };
 
 static void usage(const char *name){
@@ -340,6 +348,7 @@ int btstack_android_init(int argc, const char * argv[]){
     android_transport = ANDROID_TRANSPORT_H4;
     android_hci_device_id = 0;
     use_logcat = 0;
+    btstack_strcpy(aidl_instance_name, sizeof(aidl_instance_name), "default");
 
     int oldopterr = opterr;
     opterr = 0;
@@ -371,14 +380,19 @@ int btstack_android_init(int argc, const char * argv[]){
                     android_transport = ANDROID_TRANSPORT_HCI;
                 } else if (strcmp(optarg, "h4") == 0) {
                     android_transport = ANDROID_TRANSPORT_H4;
+                } else if (strcmp(optarg, "aidl") == 0) {
+                    android_transport = ANDROID_TRANSPORT_AIDL;
                 } else {
-                    printf("Unknown transport '%s' (use h4 or hci)\n", optarg);
+                    printf("Unknown transport '%s' (use h4, hci, or aidl)\n", optarg);
                     usage(argv[0]);
                     return 1;
                 }
                 break;
             case 'd':
                 android_hci_device_id = atoi(optarg);
+                break;
+            case 'i':
+                btstack_strcpy(aidl_instance_name, sizeof(aidl_instance_name), optarg);
                 break;
             case 'c':
                 use_logcat = 1;
@@ -415,6 +429,12 @@ int btstack_android_init(int argc, const char * argv[]){
         transport = hci_transport_android_hci_instance();
         transport_config = &hci_socket_config;
         printf("HCI transport: kernel HCI User Channel (hci%d)\n", android_hci_device_id);
+    } else if (android_transport == ANDROID_TRANSPORT_AIDL) {
+        aidl_config.type = HCI_TRANSPORT_CONFIG_UART;
+        aidl_config.instance = aidl_instance_name;
+        transport = hci_transport_android_aidl_instance();
+        transport_config = &aidl_config;
+        printf("HCI transport: IBluetoothHci AIDL (instance %s)\n", aidl_instance_name);
     } else {
         printf("H4 device: %s\n", uart_config.device_name);
         const btstack_uart_t * uart_driver = btstack_uart_posix_instance();

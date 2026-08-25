@@ -95,9 +95,23 @@ list(SORT SOURCES)
 
 add_library(btstack STATIC ${SOURCES})
 
+option(BTSTACK_ANDROID_AIDL "Build IBluetoothHci AIDL client transport (-t aidl)" ON)
+
 set(ANDROID_EXTRA_LIBS m)
 if(ANDROID)
     list(APPEND ANDROID_EXTRA_LIBS log)
+    # IBluetoothHci client: libbinder_ndk is in the NDK sysroot from API 29.
+    # AServiceManager_* is resolved at runtime from the device libbinder_ndk.so.
+    if(BTSTACK_ANDROID_AIDL)
+        find_library(BINDER_NDK_LIB binder_ndk)
+        if(BINDER_NDK_LIB)
+            list(APPEND ANDROID_EXTRA_LIBS ${BINDER_NDK_LIB} dl)
+            target_compile_definitions(btstack PRIVATE HAVE_ANDROID_BINDER_NDK=1)
+            message(STATUS "Android IBluetoothHci AIDL client: ${BINDER_NDK_LIB}")
+        else()
+            message(WARNING "libbinder_ndk not found (need ANDROID_PLATFORM=android-29+). -t aidl will be a stub; h4/hci are unchanged.")
+        endif()
+    endif()
 endif()
 
 find_package(Threads)

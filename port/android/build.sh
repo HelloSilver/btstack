@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ABI="${ANDROID_ABI:-arm64-v8a}"
-API="${ANDROID_PLATFORM:-android-24}"
+API="${ANDROID_PLATFORM:-android-34}"
 BUILD_DIR="${SCRIPT_DIR}/build-${ABI}"
 
 if [[ -z "${ANDROID_NDK:-}" ]]; then

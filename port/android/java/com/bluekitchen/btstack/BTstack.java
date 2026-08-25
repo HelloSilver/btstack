@@ -11,8 +11,10 @@ public class BTstack {
     }
 
     /**
-     * @param transport {@code "h4"} for UART or {@code "hci"} for kernel HCI User Channel
-     * @param device UART path (h4) or HCI index as a decimal string (hci)
+     * @param transport {@code "h4"} UART, {@code "hci"} kernel HCI User Channel,
+     *                 or {@code "aidl"} Android 14 {@code IBluetoothHci}
+     * @param device UART path (h4), HCI index as a decimal string (hci),
+     *               or AIDL instance name such as {@code "default"} (aidl)
      * @return 0 on success
      */
     public native int init(String transport, String device);

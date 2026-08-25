@@ -117,6 +117,19 @@ cmake --build port/android/build-arm64-v8a --target gap_le_advertisements gatt_c
 
 Or: `ANDROID_NDK=... ./port/android/build.sh` (defaults to `android-34`).
 
+Verified on this tree with Android NDK r27d, CMake 3.28.3, host Python 3.12,
+`-DANDROID_PLATFORM=android-34 -DANDROID_ABI=arm64-v8a`:
+
+```
+cmake --build port/android/build-arm64-v8a --target gap_le_advertisements gatt_counter btstack_android
+```
+
+Result: **success**. CMake reported
+`Android IBluetoothHci AIDL client: .../34/libbinder_ndk.so`.
+`file` reports `ELF 64-bit LSB pie executable, ARM aarch64` for the examples and
+`ELF 64-bit LSB shared object, ARM aarch64` for `libbtstack_android.so`.
+`readelf -d` shows `NEEDED libbinder_ndk.so` (plus `liblog`, `libdl`, `libm`, `libc`).
+
 H4 / HCI-only on older devices: `-DANDROID_PLATFORM=android-24
 -DBTSTACK_ANDROID_AIDL=OFF`.
 
